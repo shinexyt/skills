@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小说阅读器</title>
+<style>
+:root{
+  --bg:#f6f2ea; --surface:#fffdf9; --surface-2:#efe9dd;
+  --text:#2a2a2a; --text-muted:#6b6560; --border:#e2dacb;
+  --accent:#7a5c3e; --accent-soft:#efe4d3; --prose:#2f2b26;
+  --unwritten:#b9b2a6; --mark:#f7e2a8;
+  --sans:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  --serif:Georgia,"Songti SC","Noto Serif SC","Source Han Serif SC",serif;
+  --mono:ui-monospace,Consolas,"Courier New",monospace;
+  --fs:17px; --lh:1.9;
+  --radius:12px; --radius-sm:8px;
+}
+html[data-theme="dark"]{
+  --bg:#16151a; --surface:#201f26; --surface-2:#2a2831;
+  --text:#d9d5cf; --text-muted:#938d85; --border:#33303a;
+  --accent:#c9a86a; --accent-soft:#332c22; --prose:#cfc9c0;
+  --unwritten:#5d5860; --mark:#5a4a1e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--sans); font-size:15px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3,h4{margin:0;font-weight:500}
+
+/* ---------- topbar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; gap:20px;
+  padding:10px 22px; background:var(--surface);
+  border-bottom:1px solid var(--border); flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{
+  width:10px;height:22px;border-radius:3px;background:var(--accent);flex:0 0 auto;
+}
+.brand-text{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.brand-title{font-family:var(--serif);font-size:17px;font-weight:500;white-space:nowrap}
+.brand-sub{font-size:12px;color:var(--text-muted);white-space:nowrap}
+.tabs{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap}
+.tab{
+  padding:6px 13px;border-radius:var(--radius-sm);color:var(--text-muted);
+  font-size:14px;transition:background .15s,color .15s;
+}
+.tab:hover{background:var(--surface-2);text-decoration:none;color:var(--text)}
+.tab.is-active{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.top-actions{display:flex;align-items:center;gap:10px}
+.badge{
+  font-size:11px;padding:3px 9px;border-radius:999px;
+  background:var(--surface-2);color:var(--text-muted);
+  border:1px solid var(--border);white-space:nowrap;
+}
+.badge.is-alt{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft)}
+.icon-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:var(--radius-sm);cursor:pointer;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text-muted);
+}
+.icon-btn:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ---------- layout ---------- */
+main{padding:26px 22px 70px}
+.wrap{max-width:1120px;margin:0 auto}
+.wrap-narrow{max-width:760px;margin:0 auto}
+.notice{
+  margin:0 0 20px;padding:11px 15px;border-radius:var(--radius-sm);
+  background:var(--accent-soft);border:1px solid var(--border);
+  color:var(--text);font-size:13px;
+}
+.notice-item{margin:2px 0}
+.notice-item .lv{color:var(--accent);font-weight:500;margin-right:6px}
+.page-title{font-size:22px;margin-bottom:6px;font-family:var(--serif)}
+.page-sub{color:var(--text-muted);font-size:13px;margin-bottom:24px}
+.section{margin-bottom:34px}
+.section-title{
+  font-size:14px;color:var(--accent);letter-spacing:.06em;
+  margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border);
+}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px 18px;
+}
+.muted{color:var(--text-muted)}
+.empty{
+  padding:34px 22px;text-align:center;color:var(--text-muted);
+  background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);
+  font-size:14px;
+}
+.empty b{color:var(--text);font-weight:500}
+
+/* ---------- dashboard ---------- */
+.hero{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;margin-bottom:24px;
+}
+.hero h1{font-family:var(--serif);font-size:30px;letter-spacing:.02em;margin-bottom:10px}
+.hero .premise{
+  font-family:var(--serif);font-size:16px;line-height:1.85;
+  color:var(--text);max-width:62ch;
+}
+.hero .tags{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+.tag{
+  font-size:12px;padding:3px 10px;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent);
+}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.meta-item .k{font-size:12px;color:var(--text-muted);margin-bottom:5px}
+.meta-item .v{font-size:14px;line-height:1.7}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 17px}
+.stat .n{font-size:26px;font-family:var(--serif);line-height:1.2}
+.stat .n small{font-size:14px;color:var(--text-muted);margin-left:3px}
+.stat .l{font-size:12px;color:var(--text-muted);margin-top:5px}
+.bar{height:7px;border-radius:4px;background:var(--surface-2);overflow:hidden;margin-top:10px}
+.bar > i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.chart-row{display:grid;grid-template-columns:96px 1fr 68px;align-items:center;gap:12px;padding:5px 0;font-size:13px}
+.chart-row .lbl{color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chart-row .track{height:9px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+.chart-row .track > i{display:block;height:100%;background:var(--accent);opacity:.75}
+.chart-row .num{text-align:right;color:var(--text-muted);font-variant-numeric:tabular-nums}
+
+/* ---------- chapters ---------- */
+.chapter-layout{
+  display:grid;grid-template-columns:214px minmax(0,1fr) 296px;
+  gap:22px;align-items:start;max-width:1400px;margin:0 auto;
+}
+.panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px;
+  position:sticky;top:70px;max-height:calc(100vh - 96px);overflow:auto;
+}
+.panel-title{font-size:12px;color:var(--text-muted);margin-bottom:9px;letter-spacing:.05em}
+.search-box{
+  width:100%;padding:8px 10px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:var(--bg);color:var(--text);
+  font-family:var(--sans);font-size:13px;margin-bottom:9px;
+}
+.search-box:focus{outline:none;border-color:var(--accent)}
+.ch-list{list-style:none;margin:0;padding:0}
+.ch-list li{margin-bottom:1px}
+.ch-link{
+  display:flex;gap:8px;align-items:baseline;
+  padding:7px 9px;border-radius:var(--radius-sm);font-size:13px;color:var(--text);
+}
+.ch-link:hover{background:var(--surface-2);text-decoration:none}
+.ch-link.is-active{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.ch-link .no{color:var(--text-muted);font-variant-numeric:tabular-nums;flex:0 0 auto;font-size:12px}
+.ch-link .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-link.is-unwritten{color:var(--unwritten);cursor:not-allowed;pointer-events:none}
+.hit{
+  display:block;padding:9px 10px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);margin-bottom:8px;font-size:13px;color:var(--text);
+}
+.hit:hover{background:var(--surface-2);text-decoration:none}
+.hit .h-title{font-weight:500;margin-bottom:4px}
+.hit .h-snip{color:var(--text-muted);font-size:12px;line-height:1.65;word-break:break-word}
+.hit .h-snip mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
+.hit .h-count{float:right;color:var(--text-muted);font-size:11px}
+.reader{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:34px 40px 30px;
+}
+.reader-head{border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:26px}
+.reader-head .rh-no{font-size:12px;color:var(--accent);letter-spacing:.1em;margin-bottom:6px}
+.reader-head h2{font-family:var(--serif);font-size:24px;line-height:1.45}
+.reader-head .rh-meta{font-size:12px;color:var(--text-muted);margin-top:8px}
+.reader-tools{
+  display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+  padding-bottom:16px;margin-bottom:6px;border-bottom:1px solid var(--border);
+  font-size:12px;color:var(--text-muted);
+}
+.reader-tools label{display:flex;align-items:center;gap:7px}
+.reader-tools input[type=range]{width:92px;accent-color:var(--accent)}
+.chapter-nav{
+  display:flex;justify-content:space-between;gap:12px;
+  margin-top:34px;padding-top:20px;border-top:1px solid var(--border);
+}
+.nav-btn{
+  padding:9px 15px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text);font-size:13px;cursor:pointer;
+}
+.nav-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.nav-btn:disabled{opacity:.4;cursor:not-allowed}
+.side-block{margin-bottom:20px}
+.side-block:last-child{margin-bottom:0}
+.side-k{font-size:11px;color:var(--accent);letter-spacing:.08em;margin-bottom:6px}
+.side-body{font-size:13px;line-height:1.8;color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  font-size:11px;padding:3px 8px;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent);
+  border:1px solid transparent;white-space:nowrap;
+}
+.chip.k-角色{background:var(--surface-2);color:var(--text)}
+.chip.k-伏笔{background:var(--accent-soft);color:var(--accent)}
+.chip.k-事件{background:transparent;color:var(--text-muted);border-color:var(--border)}
+.chip.k-未知{background:transparent;color:var(--text-muted);border-color:var(--border);border-style:dashed}
+
+/* ---------- prose ---------- */
+.md-prose{font-family:var(--serif);font-size:var(--fs);line-height:var(--lh);color:var(--prose)}
+.md p{margin:0 0 1.1em}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{font-weight:500;line-height:1.5;margin:1.6em 0 .7em}
+.md h1{font-size:1.34em}.md h2{font-size:1.2em}.md h3{font-size:1.08em}
+.md h4,.md h5,.md h6{font-size:1em;color:var(--text-muted)}
+.md hr{border:0;border-top:1px solid var(--border);margin:1.8em 0}
+.md blockquote{
+  margin:0 0 1.1em;padding:2px 0 2px 16px;
+  border-left:2px solid var(--border);color:var(--text-muted);
+}
+.md ul{margin:0 0 1.1em;padding-left:1.4em}
+.md li{margin-bottom:.35em}
+.md code{
+  font-family:var(--mono);font-size:.88em;padding:1px 5px;
+  border-radius:4px;background:var(--surface-2);
+}
+.md mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
+.md-sm{font-size:13.5px;line-height:1.75;color:var(--text)}
+
+/* ---------- blueprint / outline / state ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.char-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.char-card .cn{font-family:var(--serif);font-size:18px;margin-bottom:3px}
+.char-card .cr{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6}
+.char-card .cf{font-size:13px;line-height:1.75;margin-bottom:9px}
+.char-card .cf:last-child{margin-bottom:0}
+.char-card .cf .fk{color:var(--accent);font-size:11px;letter-spacing:.06em;margin-right:6px}
+.thread{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:15px 17px;margin-bottom:11px;
+}
+.thread .tn{font-size:15px;font-weight:500;margin-bottom:4px}
+.thread .tid{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:11px}
+.thread .tpair{display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px;line-height:1.75}
+.thread .tpair .pk{font-size:11px;color:var(--accent);letter-spacing:.06em;margin-bottom:4px}
+.tl{position:relative;padding-left:22px}
+.tl::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:17px}
+.tl-item::before{
+  content:"";position:absolute;left:-21px;top:6px;width:9px;height:9px;border-radius:50%;
+  background:var(--surface);border:1.5px solid var(--accent);
+}
+.tl-when{font-size:11px;color:var(--accent);letter-spacing:.05em;margin-bottom:4px}
+.tl-ev{font-size:13.5px;line-height:1.75;margin-bottom:5px}
+.tl-co{font-size:12.5px;line-height:1.7;color:var(--text-muted);padding-left:11px;border-left:2px solid var(--border)}
+.act-head{
+  display:flex;align-items:baseline;gap:11px;margin:26px 0 13px;
+  padding-bottom:7px;border-bottom:1px solid var(--border);
+}
+.act-head .an{font-family:var(--serif);font-size:19px}
+.act-head .ar{font-size:12px;color:var(--text-muted)}
+.act-head:first-child{margin-top:0}
+.o-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 17px;margin-bottom:11px;
+}
+.o-card.is-unwritten{opacity:.55}
+.o-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.o-seq{
+  font-family:var(--mono);font-size:11px;color:var(--accent);
+  background:var(--accent-soft);border-radius:4px;padding:2px 7px;flex:0 0 auto;
+}
+.o-title{font-family:var(--serif);font-size:16.5px;flex:1 1 auto;min-width:0}
+.o-flag{font-size:11px;color:var(--text-muted);border:1px solid var(--border);border-radius:999px;padding:2px 8px}
+.o-flag.done{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft)}
+.o-row{display:flex;gap:10px;font-size:13px;line-height:1.75;margin-bottom:8px}
+.o-row:last-child{margin-bottom:0}
+.o-row .ok{flex:0 0 62px;color:var(--accent);font-size:11px;letter-spacing:.05em;padding-top:3px}
+.o-row .ov{flex:1 1 auto;min-width:0}
+.kv{width:100%;border-collapse:collapse;font-size:13px}
+.kv th,.kv td{
+  text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);
+  vertical-align:top;line-height:1.7;
+}
+.kv th{width:23%;color:var(--text-muted);font-weight:400;font-size:12px}
+.kv tr:last-child th,.kv tr:last-child td{border-bottom:0}
+.resolved{font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.resolved.y{background:var(--accent-soft);color:var(--accent)}
+.resolved.n{background:var(--surface-2);color:var(--text-muted)}
+.summary-item{
+  padding:12px 0;border-bottom:1px solid var(--border);font-size:13.5px;line-height:1.8;
+}
+.summary-item:last-child{border-bottom:0}
+footer{
+  max-width:1120px;margin:44px auto 0;padding-top:16px;
+  border-top:1px solid var(--border);color:var(--text-muted);font-size:12px;
+}
+
+@media (max-width:1240px){
+  .chapter-layout{grid-template-columns:200px minmax(0,1fr)}
+  .chapter-layout > .panel:last-child{grid-column:1 / -1;position:static;max-height:none}
+}
+@media (max-width:860px){
+  .chapter-layout{grid-template-columns:1fr}
+  .panel{position:static;max-height:none}
+  .reader{padding:24px 20px}
+  .thread .tpair{grid-template-columns:1fr;gap:11px}
+  .topbar{padding:10px 14px;gap:12px}
+  main{padding:18px 14px 60px}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <span class="brand-text">
+      <span class="brand-title" id="brandTitle">小说</span>
+      <span class="brand-sub" id="brandSub"></span>
+    </span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <a class="tab" href="#/dashboard" data-view="dashboard">概览</a>
+    <a class="tab" href="#/chapters" data-view="chapters">章节</a>
+    <a class="tab" href="#/blueprint" data-view="blueprint">蓝图</a>
+    <a class="tab" href="#/outline" data-view="outline">路线</a>
+    <a class="tab" href="#/state" data-view="state">状态</a>
+  </nav>
+  <div class="top-actions">
+    <span class="badge" id="modeBadge" title="当前数据来源">—</span>
+    <button class="icon-btn" id="themeBtn" type="button" title="切换明暗主题" aria-label="切换明暗主题"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.1" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.9a6.1 6.1 0 0 0 0 12.2z" fill="currentColor"/></svg></button>
+  </div>
+</header>
+<div class="wrap" id="noticeWrap" hidden><div class="notice" id="notice"></div></div>
+<main id="view"><div class="wrap"><div class="empty">正在载入…</div></div></main>
+
+<script id="novel-data" type="application/json">@@NOVEL_DATA@@</script>
+<script>
+(function(){
+'use strict';
+
+/* ============ 小工具 ============ */
+function h(tag, attrs){
+  var n = document.createElement(tag), i, v;
+  if(typeof attrs === 'string'){ n.className = attrs; attrs = null; }
+  if(attrs){
+    for(i in attrs){
+      v = attrs[i];
+      if(v === null || v === undefined || v === false) continue;
+      if(i === 'class') n.className = v;
+      else if(i === 'text') n.textContent = v;
+      else if(i === 'style') n.setAttribute('style', v);
+      else n.setAttribute(i, v === true ? '' : String(v));
+    }
+  }
+  for(i = 2; i < arguments.length; i++) append(n, arguments[i]);
+  return n;
+}
+function append(n, k){
+  if(k === null || k === undefined || k === false) return;
+  if(Array.isArray(k)){ for(var j = 0; j < k.length; j++) append(n, k[j]); return; }
+  if(k instanceof Node) n.appendChild(k);
+  else n.appendChild(document.createTextNode(String(k)));
+}
+function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+function txt(s){ return document.createTextNode(s === null || s === undefined ? '' : String(s)); }
+function num(n){
+  if(typeof n !== 'number' || !isFinite(n)) return '—';
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function lines(s){
+  if(s === null || s === undefined) return [];
+  return String(s).split(/\r\n?|\n/);
+}
+function has(v){ return v !== null && v !== undefined && String(v).trim() !== ''; }
+
+/* ============ 安全存储（file:// 下 localStorage 可能抛错） ============ */
+var mem = {};
+var store = {
+  get: function(k){
+    try{ var v = localStorage.getItem(k); if(v !== null) return v; }catch(e){}
+    return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null;
+  },
+  set: function(k, v){
+    mem[k] = v;
+    try{ localStorage.setItem(k, v); }catch(e){}
+  }
+};
+
+/* ============ 数据来源解析链 ============ */
+var DATA = null, MODE = 'empty';
+
+function fromInline(){
+  var el = document.getElementById('novel-data');
+  if(!el) return null;
+  var t = (el.textContent || '').trim();
+  if(!t) return null;
+  try{ return JSON.parse(t); }catch(e){ return null; }
+}
+
+function fromDataFile(){
+  return new Promise(function(res){
+    var settled = false;
+    function finish(value){ if(settled) return; settled = true; clearTimeout(timer); res(value); }
+    // 兜底：个别环境下 onload / onerror 都不触发，不能让页面卡在“正在载入”
+    var timer = setTimeout(function(){ finish(null); }, 2500);
+    var s = document.createElement('script');
+    s.src = 'viewer-data.js';
+    s.onload = function(){ finish(window.NOVEL_DATA || null); };
+    s.onerror = function(){ finish(null); };
+    document.head.appendChild(s);
+  });
+}
+
+/* ============ Markdown 渲染（全程 DOM 构造，零 innerHTML 注入） ============ */
+function inlineMd(text, parent){
+  var re = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g, m, last = 0;
+  while((m = re.exec(text)) !== null){
+    if(m.index > last) parent.appendChild(txt(text.slice(last, m.index)));
+    var t = m[0], tag = 'em', inner;
+    if(t.slice(0, 2) === '**'){ tag = 'strong'; inner = t.slice(2, -2); }
+    else if(t.charAt(0) === '`'){ tag = 'code'; inner = t.slice(1, -1); }
+    else { inner = t.slice(1, -1); }
+    var e = document.createElement(tag);
+    e.textContent = inner;
+    parent.appendChild(e);
+    last = re.lastIndex;
+  }
+  if(last < text.length) parent.appendChild(txt(text.slice(last)));
+}
+var RE_HR = /^\s*([-*_])\s*\1\s*\1[\s\-*_]*$/;
+var RE_H = /^\s*(#{1,6})\s+(.*)$/;
+var RE_Q = /^\s*>\s?/;
+var RE_LI = /^\s*[-*]\s+/;
+function renderMd(md, opts){
+  opts = opts || {};
+  var root = h('div', 'md' + (opts.prose ? ' md-prose' : '') + (opts.small ? ' md-sm' : ''));
+  var ls = lines(md), i = 0, m, buf, j, node;
+  while(i < ls.length){
+    if(!ls[i].trim()){ i++; continue; }
+    if(RE_HR.test(ls[i])){ root.appendChild(h('hr')); i++; continue; }
+    m = RE_H.exec(ls[i]);
+    if(m){
+      var lv = Math.min(m[1].length, 6);
+      node = document.createElement('h' + lv);
+      inlineMd(m[2], node);
+      root.appendChild(node); i++; continue;
+    }
+    if(RE_Q.test(ls[i])){
+      node = h('blockquote');
+      buf = [];
+      while(i < ls.length && RE_Q.test(ls[i])){ buf.push(ls[i].replace(RE_Q, '')); i++; }
+      for(j = 0; j < buf.length; j++){ if(j) node.appendChild(h('br')); inlineMd(buf[j], node); }
+      root.appendChild(node); continue;
+    }
+    if(RE_LI.test(ls[i])){
+      var ul = h('ul');
+      while(i < ls.length && RE_LI.test(ls[i])){
+        var li = h('li');
+        inlineMd(ls[i].replace(RE_LI, ''), li);
+        ul.appendChild(li); i++;
+      }
+      root.appendChild(ul); continue;
+    }
+    buf = [];
+    while(i < ls.length && ls[i].trim() && !RE_H.test(ls[i]) && !RE_Q.test(ls[i]) && !RE_LI.test(ls[i]) && !RE_HR.test(ls[i])){
+      buf.push(ls[i]); i++;
+    }
+    if(opts.breaks){
+      for(j = 0; j < buf.length; j++){
+        var p1 = h('p');
+        inlineMd(buf[j], p1);
+        root.appendChild(p1);
+      }
+    } else {
+      var p = h('p');
+      for(j = 0; j < buf.length; j++){ if(j) p.appendChild(h('br')); inlineMd(buf[j], p); }
+      root.appendChild(p);
+    }
+  }
+  return root;
+}
+
+/* ============ ID 解析 ============ */
+var IDX = new Map();
+function buildIndex(D){
+  IDX = new Map();
+  var bp = D && D.blueprint, st = D && D.state, i, x;
+  if(bp && bp.characters) for(i = 0; i < bp.characters.length; i++){
+    x = bp.characters[i];
+    if(x && x.id) IDX.set(x.id, {kind:'角色', label:x.name || x.id, detail:x.role || ''});
+  }
+  if(bp && bp.plotThreads) for(i = 0; i < bp.plotThreads.length; i++){
+    x = bp.plotThreads[i];
+    if(x && x.id) IDX.set(x.id, {kind:'伏笔', label:x.name || x.id, detail:x.setup || ''});
+  }
+  if(bp && bp.timeline) for(i = 0; i < bp.timeline.length; i++){
+    x = bp.timeline[i];
+    if(x && x.id) IDX.set(x.id, {kind:'事件', label:String(x.event || x.id).slice(0, 30), detail:x.when || ''});
+  }
+  if(st && st.characters) for(i = 0; i < st.characters.length; i++){
+    x = st.characters[i];
+    if(x && x.id && !IDX.has(x.id)) IDX.set(x.id, {kind:'角色', label:x.name || x.id, detail:x.role || ''});
+  }
+  if(st && st.plotThreads) for(i = 0; i < st.plotThreads.length; i++){
+    x = st.plotThreads[i];
+    if(x && x.id && !IDX.has(x.id)) IDX.set(x.id, {kind:'伏笔', label:x.name || x.id, detail:x.setup || ''});
+  }
+}
+function resolveId(id){
+  if(IDX.has(id)) return IDX.get(id);
+  return {kind:'未知', label:String(id), detail:'未在蓝图或状态中找到该 ID'};
+}
+function chip(id){
+  var r = resolveId(id);
+  return h('span', {class:'chip k-' + r.kind, title:r.kind + '：' + r.label + (r.detail ? '\n' + r.detail : '')}, r.label);
+}
+function chipList(ids){
+  if(!ids || !ids.length) return h('span', {class:'muted', style:'font-size:12px'}, '未标注');
+  var box = h('div', 'chips');
+  for(var i = 0; i < ids.length; i++) box.appendChild(chip(ids[i]));
+  return box;
+}
+
+/* ============ 索引辅助 ============ */
+function outlineBySeq(){
+  var m = {}, o = DATA.outline && DATA.outline.chapters ? DATA.outline.chapters : [];
+  for(var i = 0; i < o.length; i++) if(o[i] && o[i].sequence) m[o[i].sequence] = o[i];
+  return m;
+}
+function writtenSeqs(){
+  var s = {};
+  for(var i = 0; i < DATA.chapters.length; i++) if(DATA.chapters[i].seq) s[DATA.chapters[i].seq] = true;
+  return s;
+}
+function summaryFor(seq){
+  var s = DATA.state && DATA.state.summaries ? DATA.state.summaries : [];
+  var pre = '第' + seq + '章';
+  for(var i = 0; i < s.length; i++) if(String(s[i]).indexOf(pre) === 0) return String(s[i]);
+  return '';
+}
+function totalWritten(){
+  var t = DATA.project && DATA.project.targetChapterCount ? DATA.project.targetChapterCount : DATA.chapters.length;
+  return {done: DATA.chapters.length, target: t || DATA.chapters.length};
+}
+
+/* ============ 视图：概览 ============ */
+function viewDashboard(root){
+  var w = h('div', 'wrap'), p = DATA.project || {};
+  w.appendChild(h('div', 'hero',
+    h('h1', {text: p.title || '未命名作品'}),
+    p.premise ? h('div', 'premise', p.premise) : h('div', {class:'premise muted'}, '（project.json 未填写 premise）'),
+    h('div', 'tags',
+      p.genre ? h('span', {class:'tag', text:p.genre}) : null,
+      p.language ? h('span', {class:'tag', text:p.language}) : null
+    )
+  ));
+
+  var meta = h('div', 'meta-grid');
+  [['题材', p.genre], ['叙事结构', p.narrativeStructure], ['叙事视角', p.pointOfView], ['文风', p.style]].forEach(function(row){
+    meta.appendChild(h('div', 'card meta-item',
+      h('div', {class:'k', text:row[0]}),
+      h('div', {class:'v' + (has(row[1]) ? '' : ' muted'), text: has(row[1]) ? row[1] : '—'})
+    ));
+  });
+  w.appendChild(h('div', 'section', h('div', 'section-title', '设定'), meta));
+
+  var bp = DATA.blueprint || {};
+  var tw = totalWritten();
+  var threads = bp.plotThreads || [];
+  var stThreads = DATA.state && DATA.state.plotThreads ? DATA.state.plotThreads : null;
+  var resolvedCount = null;
+  if(stThreads){
+    resolvedCount = 0;
+    for(var i = 0; i < stThreads.length; i++) if(stThreads[i] && stThreads[i].resolved === true) resolvedCount++;
+  }
+  var referenced = {};
+  var ob = outlineBySeq();
+  for(var k = 0; k < DATA.chapters.length; k++){
+    var sq = DATA.chapters[k].seq;
+    var oc = sq ? ob[sq] : null;
+    if(oc && oc.requiredStateIds) for(var j = 0; j < oc.requiredStateIds.length; j++) referenced[oc.requiredStateIds[j]] = true;
+  }
+  var threadIds = {};
+  for(var t = 0; t < threads.length; t++) if(threads[t] && threads[t].id) threadIds[threads[t].id] = true;
+  var touched = 0;
+  for(var id in referenced) if(threadIds[id]) touched++;
+
+  var totalChars = 0;
+  for(var c = 0; c < DATA.chapters.length; c++) totalChars += DATA.chapters[c].charCount || 0;
+
+  var stats = h('div', 'stats');
+  function stat(n, l, extra){
+    var s = h('div', 'stat', h('div', 'n', n), h('div', {class:'l', text:l}));
+    if(extra) s.appendChild(extra);
+    return s;
+  }
+  stats.appendChild(stat(String(tw.done), '已写章节 / 共 ' + tw.target + ' 章',
+    h('div', 'bar', h('i', {style:'width:' + (tw.target ? Math.min(100, Math.round(tw.done / tw.target * 100)) : 0) + '%'}))));
+  stats.appendChild(stat(num(totalChars), '已写正文总字数'));
+  stats.appendChild(stat(num((bp.characters || []).length), '人物'));
+  stats.appendChild(stat(num(threads.length), '伏笔', null));
+  stats.appendChild(stat(resolvedCount === null ? '—' : String(resolvedCount), '伏笔已回收' + (resolvedCount === null ? '（需 state.json）' : '')));
+  stats.appendChild(stat(String(touched), '伏笔已涉及'));
+  stats.appendChild(stat(num((bp.timeline || []).length), '时间线节点'));
+  w.appendChild(h('div', 'section', h('div', 'section-title', '进度'), stats));
+
+  if(DATA.chapters.length){
+    var maxC = 0;
+    for(var d = 0; d < DATA.chapters.length; d++) if(DATA.chapters[d].charCount > maxC) maxC = DATA.chapters[d].charCount;
+    var chart = h('div', 'card');
+    for(var e = 0; e < DATA.chapters.length; e++){
+      var ch = DATA.chapters[e];
+      chart.appendChild(h('div', 'chart-row',
+        h('div', {class:'lbl', title:ch.title}, '第' + (ch.seq || '?') + '章'),
+        h('div', 'track', h('i', {style:'width:' + (maxC ? Math.round(ch.charCount / maxC * 100) : 0) + '%'})),
+        h('div', {class:'num', text:num(ch.charCount)})
+      ));
+    }
+    w.appendChild(h('div', 'section', h('div', 'section-title', '各章字数'), chart));
+  }
+  root.appendChild(w);
+}
+
+/* ============ 视图：章节 ============ */
+var SEARCH = {q:'', results:null};
+function makeSnippet(text, at, len){
+  var from = Math.max(0, at - 26), to = Math.min(text.length, at + len + 44);
+  return {before:(from > 0 ? '…' : '') + text.slice(from, at), hit:text.substr(at, len), after:text.slice(at + len, to) + (to < text.length ? '…' : '')};
+}
+function runSearch(q){
+  var n = q.trim().toLowerCase();
+  if(!n) return [];
+  var out = [];
+  for(var i = 0; i < DATA.chapters.length; i++){
+    var ch = DATA.chapters[i], hay = ch.markdown || '', low = hay.toLowerCase();
+    var at = low.indexOf(n), count = 0, first = at;
+    while(at !== -1 && count < 500){ count++; at = low.indexOf(n, at + n.length); }
+    if(count) out.push({ch:ch, count:count, snip:makeSnippet(hay, first, n.length)});
+  }
+  return out;
+}
+function highlightIn(root, needle){
+  if(!needle) return;
+  var n = needle.toLowerCase();
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  var targets = [], node;
+  while((node = walker.nextNode())){
+    if(node.parentNode && node.parentNode.nodeName === 'MARK') continue;
+    if(node.nodeValue && node.nodeValue.toLowerCase().indexOf(n) !== -1) targets.push(node);
+  }
+  var first = null;
+  for(var i = 0; i < targets.length; i++){
+    var t = targets[i], val = t.nodeValue, low = val.toLowerCase();
+    var frag = document.createDocumentFragment(), last = 0, at;
+    while((at = low.indexOf(n, last)) !== -1){
+      if(at > last) frag.appendChild(txt(val.slice(last, at)));
+      var mk = document.createElement('mark');
+      mk.textContent = val.substr(at, n.length);
+      frag.appendChild(mk);
+      if(!first) first = mk;
+      last = at + n.length;
+    }
+    if(last < val.length) frag.appendChild(txt(val.slice(last)));
+    if(t.parentNode) t.parentNode.replaceChild(frag, t);
+  }
+  if(first && first.scrollIntoView) first.scrollIntoView({block:'center'});
+}
+function viewChapters(root, seq, highlight){
+  var wrap = h('div', 'wrap');
+  var layout = h('div', 'chapter-layout');
+  var ob = outlineBySeq(), ws = writtenSeqs();
+  if(!seq && DATA.chapters.length) seq = DATA.chapters[0].seq;
+  if(seq && !ws[seq] && DATA.chapters.length) seq = DATA.chapters[0].seq;
+
+  /* 左：列表 / 搜索 */
+  var left = h('div', 'panel');
+  left.appendChild(h('div', {class:'panel-title', text:'章节列表'}));
+  var box = h('input', {class:'search-box', type:'search', placeholder:'搜索全书正文…', value:SEARCH.q});
+  left.appendChild(box);
+  var resultBox = h('div');
+  left.appendChild(resultBox);
+  var ul = h('ul', 'ch-list');
+  var planned = DATA.outline && DATA.outline.chapters ? DATA.outline.chapters : [];
+  var seen = {};
+  function addRow(sq, title, written){
+    seen[sq] = true;
+    var li = h('li');
+    li.appendChild(h('a', {
+      class:'ch-link' + (sq === seq ? ' is-active' : '') + (written ? '' : ' is-unwritten'),
+      href:'#/chapters/' + sq,
+      title:title || ''
+    },
+      h('span', {class:'no', text:String(sq)}),
+      h('span', {class:'nm', text:title || ('第' + sq + '章')})
+    ));
+    ul.appendChild(li);
+  }
+  for(var i = 0; i < planned.length; i++){
+    var pc = planned[i];
+    if(!pc || !pc.sequence || seen[pc.sequence]) continue;
+    addRow(pc.sequence, pc.title, !!ws[pc.sequence]);
+  }
+  for(var j = 0; j < DATA.chapters.length; j++){
+    var ch = DATA.chapters[j];
+    if(ch.seq && seen[ch.seq]) continue;
+    addRow(ch.file, ch.title, true);
+  }
+  left.appendChild(ul);
+  layout.appendChild(left);
+
+  /* 中：正文 */
+  var mid = h('div');
+  var found = DATA.chapters.filter(function(c){ return c.seq === seq; })[0];
+  if(!DATA.chapters.length){
+    mid.appendChild(h('div', 'empty', '还没有任何章节正文。写完第一章后重新生成阅读器，再刷新本页。'));
+  } else if(!found){
+    mid.appendChild(h('div', 'empty', '该章尚未写出。'));
+  } else {
+    var reader = h('div', 'reader');
+    reader.appendChild(h('div', 'reader-head',
+      h('div', {class:'rh-no', text:'第 ' + (found.seq || '?') + ' 章'}),
+      h('h2', {text: found.title || ''}),
+      h('div', {class:'rh-meta', text: found.file + ' · ' + num(found.charCount) + ' 字'})
+    ));
+    var tools = h('div', 'reader-tools');
+    var fsRange = h('input', {type:'range', min:'14', max:'24', step:'1', value:store.get('nw.fs') || '17'});
+    var lhRange = h('input', {type:'range', min:'1.4', max:'2.4', step:'0.05', value:store.get('nw.lh') || '1.9'});
+    fsRange.addEventListener('input', function(){ applyType(fsRange.value, lhRange.value); });
+    lhRange.addEventListener('input', function(){ applyType(fsRange.value, lhRange.value); });
+    tools.appendChild(h('label', null, '字号', fsRange));
+    tools.appendChild(h('label', null, '行距', lhRange));
+    tools.appendChild(h('span', {class:'muted', text:'← → 翻章'}));
+    reader.appendChild(tools);
+    var body = renderMd(found.markdown, {prose:true});
+    reader.appendChild(body);
+    highlightIn(body, highlight);
+    reader.appendChild(h('div', 'chapter-nav',
+      h('button', {class:'nav-btn', type:'button', 'data-dir':'-1', text:'← 上一章'}),
+      h('button', {class:'nav-btn', type:'button', 'data-dir':'1', text:'下一章 →'})
+    ));
+    mid.appendChild(reader);
+  }
+  layout.appendChild(mid);
+
+  /* 右：大纲侧栏 */
+  var side = h('div', 'panel');
+  side.appendChild(h('div', {class:'panel-title', text:'本章大纲'}));
+  if(found){
+    var oc = found.seq ? ob[found.seq] : null;
+    if(oc){
+      if(has(oc.sceneGoal)){
+        side.appendChild(h('div', 'side-block',
+          h('div', {class:'side-k', text:'场景目标'}),
+          h('div', {class:'side-body'}, renderMd(oc.sceneGoal, {small:true}))
+        ));
+      }
+      if(has(oc.summaryTarget)){
+        side.appendChild(h('div', 'side-block',
+          h('div', {class:'side-k', text:'本章须成立'}),
+          h('div', {class:'side-body'}, renderMd(oc.summaryTarget, {small:true}))
+        ));
+      }
+      side.appendChild(h('div', 'side-block',
+        h('div', {class:'side-k', text:'引用的人物 / 伏笔 / 事件'}),
+        chipList(oc.requiredStateIds)
+      ));
+    } else {
+      side.appendChild(h('div', {class:'side-block muted', style:'font-size:13px'}, 'outline.json 中没有这一章的条目。'));
+    }
+    var sm = summaryFor(found.seq);
+    if(sm){
+      side.appendChild(h('div', 'side-block',
+        h('div', {class:'side-k', text:'state.json 摘要'}),
+        h('div', {class:'side-body', style:'font-size:12.5px'}, renderMd(sm, {small:true}))
+      ));
+    }
+  } else {
+    side.appendChild(h('div', {class:'muted', style:'font-size:13px'}, '未选择章节。'));
+  }
+  layout.appendChild(side);
+
+  wrap.appendChild(layout);
+  root.appendChild(wrap);
+
+  function refreshResults(){
+    clear(resultBox);
+    if(!SEARCH.q.trim()){ ul.hidden = false; return; }
+    ul.hidden = true;
+    var res = runSearch(SEARCH.q);
+    if(!res.length){
+      resultBox.appendChild(h('div', {class:'muted', style:'font-size:12px;padding:6px 2px'}, '没有匹配。'));
+      return;
+    }
+    resultBox.appendChild(h('div', {class:'panel-title', text:'命中 ' + res.length + ' 章'}));
+    res.forEach(function(r){
+      var a = h('a', {class:'hit', href:'#/chapters/' + (r.ch.seq || 0) + '?q=' + encodeURIComponent(SEARCH.q)});
+      a.appendChild(h('span', {class:'h-count', text:r.count + ' 处'}));
+      a.appendChild(h('div', {class:'h-title', text:'第' + (r.ch.seq || '?') + '章 ' + (r.ch.title || '')}));
+      var sn = h('div', 'h-snip');
+      sn.appendChild(txt(r.snip.before));
+      sn.appendChild(h('mark', {text:r.snip.hit}));
+      sn.appendChild(txt(r.snip.after));
+      a.appendChild(sn);
+      resultBox.appendChild(a);
+    });
+  }
+  var timer = null;
+  box.addEventListener('input', function(){
+    SEARCH.q = box.value;
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(refreshResults, 150);
+  });
+  refreshResults();
+
+  var btns = mid.querySelectorAll('.nav-btn');
+  for(var b = 0; b < btns.length; b++){
+    btns[b].addEventListener('click', function(){
+      var dir = parseInt(this.getAttribute('data-dir'), 10);
+      var seqs = DATA.chapters.map(function(c){ return c.seq; }).filter(function(s){ return s; });
+      var at = seqs.indexOf(seq);
+      var next = seqs[at + dir];
+      if(next) location.hash = '#/chapters/' + next;
+    });
+    var seqs0 = DATA.chapters.map(function(c){ return c.seq; }).filter(function(s){ return s; });
+    var at0 = seqs0.indexOf(seq);
+    var dir0 = parseInt(btns[b].getAttribute('data-dir'), 10);
+    if(seqs0[at0 + dir0] === undefined) btns[b].disabled = true;
+  }
+}
+
+/* ============ 视图：蓝图 ============ */
+function viewBlueprint(root){
+  var w = h('div', 'wrap'), bp = DATA.blueprint;
+  if(!bp){ root.appendChild(h('div', 'wrap', h('div', 'empty', '没有 blueprint.json。'))); return; }
+  w.appendChild(h('div', {class:'page-title', text:'叙事蓝图'}));
+  w.appendChild(h('div', {class:'page-sub', text:'主题、核心冲突、主角弧、节拍、人物、伏笔与时间线'}));
+
+  ['theme', 'coreConflict', 'protagonistArc', 'beats'].forEach(function(key){
+    var label = {theme:'主题', coreConflict:'核心冲突', protagonistArc:'主角弧', beats:'节拍'}[key];
+    if(!has(bp[key])) return;
+    w.appendChild(h('div', 'section',
+      h('div', 'section-title', label),
+      h('div', 'card', renderMd(bp[key], {small:true, breaks:(key === 'beats')}))
+    ));
+  });
+
+  var chars = bp.characters || [];
+  if(chars.length){
+    var grid = h('div', 'cards');
+    chars.forEach(function(c){
+      grid.appendChild(h('div', 'char-card',
+        h('div', {class:'cn', text:c.name || c.id}),
+        h('div', {class:'cr', text:c.role || ''}),
+        has(c.goal) ? h('div', 'cf', h('span', {class:'fk', text:'目标'}), txt(c.goal)) : null,
+        has(c.fear) ? h('div', 'cf', h('span', {class:'fk', text:'恐惧'}), txt(c.fear)) : null,
+        has(c.secret) ? h('div', 'cf', h('span', {class:'fk', text:'秘密'}), txt(c.secret)) : null,
+        h('div', {class:'cf'}, h('span', {class:'fk', text:'ID'}), h('span', {class:'muted', style:'font-family:var(--mono);font-size:11px', text:c.id}))
+      ));
+    });
+    w.appendChild(h('div', 'section', h('div', 'section-title', '人物 · ' + chars.length), grid));
+  }
+
+  var threads = bp.plotThreads || [];
+  if(threads.length){
+    var box = h('div');
+    threads.forEach(function(t){
+      box.appendChild(h('div', 'thread',
+        h('div', {class:'tn', text:t.name || t.id}),
+        h('div', {class:'tid', text:t.id}),
+        h('div', 'tpair',
+          h('div', null, h('div', {class:'pk', text:'埋设'}), h('div', null, renderMd(t.setup || '', {small:true}))),
+          h('div', null, h('div', {class:'pk', text:'计划回收'}), h('div', null, renderMd(t.plannedPayoff || '', {small:true})))
+        )
+      ));
+    });
+    w.appendChild(h('div', 'section', h('div', 'section-title', '伏笔 · ' + threads.length), box));
+  }
+
+  var tl = bp.timeline || [];
+  if(tl.length){
+    var tbox = h('div', 'tl');
+    tl.forEach(function(e){
+      tbox.appendChild(h('div', 'tl-item',
+        h('div', {class:'tl-when', text:(e.when || '') + '   ·   ' + e.id}),
+        h('div', 'tl-ev', renderMd(e.event || '', {small:true})),
+        has(e.consequence) ? h('div', 'tl-co', renderMd(e.consequence, {small:true})) : null
+      ));
+    });
+    w.appendChild(h('div', 'section', h('div', 'section-title', '时间线 · ' + tl.length), tbox));
+  }
+  root.appendChild(w);
+}
+
+/* ============ 视图：路线 ============ */
+function deriveActs(){
+  var bp = DATA.blueprint;
+  if(!bp) return null;
+  var re = /第\s*(\d+)\s*(?:[–—\-]\s*(\d+))?\s*章/;
+  var acts = [], ls = lines(bp.beats), i;
+  for(i = 0; i < ls.length; i++){
+    var line = ls[i].trim();
+    if(!line) continue;
+    var m = re.exec(line);
+    if(!m) continue;
+    var from = parseInt(m[1], 10), to = m[2] ? parseInt(m[2], 10) : from;
+    var name = line.split(/[（(]/)[0].trim();
+    if(!name || name.length > 14) name = '第' + from + (to !== from ? '–' + to : '') + '章';
+    acts.push({name:name, from:from, to:to});
+  }
+  return acts.length ? acts : null;
+}
+function viewOutline(root){
+  var w = h('div', 'wrap');
+  var oc = DATA.outline && DATA.outline.chapters ? DATA.outline.chapters : [];
+  if(!oc.length){ root.appendChild(h('div', 'wrap', h('div', 'empty', '没有 outline.json，或 chapters 为空。'))); return; }
+  var ws = writtenSeqs();
+  var done = 0;
+  for(var i = 0; i < oc.length; i++) if(ws[oc[i].sequence]) done++;
+  w.appendChild(h('div', {class:'page-title', text:'章节路线'}));
+  w.appendChild(h('div', {class:'page-sub', text:'共 ' + oc.length + ' 章，已写 ' + done + ' 章'}));
+
+  function cardOf(c){
+    var card = h('div', 'o-card' + (ws[c.sequence] ? '' : ' is-unwritten'));
+    card.appendChild(h('div', 'o-head',
+      h('span', {class:'o-seq', text:String(c.sequence)}),
+      h('span', {class:'o-title', text:c.title || ''}),
+      h('span', {class:'o-flag' + (ws[c.sequence] ? ' done' : ''), text:(ws[c.sequence] ? '已写' : '未写')})
+    ));
+    if(has(c.sceneGoal)) card.appendChild(h('div', 'o-row',
+      h('div', {class:'ok', text:'场景目标'}),
+      h('div', {class:'ov'}, renderMd(c.sceneGoal, {small:true}))
+    ));
+    if(has(c.summaryTarget)) card.appendChild(h('div', 'o-row',
+      h('div', {class:'ok', text:'须成立'}),
+      h('div', {class:'ov'}, renderMd(c.summaryTarget, {small:true}))
+    ));
+    card.appendChild(h('div', 'o-row',
+      h('div', {class:'ok', text:'引用'}),
+      h('div', {class:'ov'}, chipList(c.requiredStateIds))
+    ));
+    return card;
+  }
+
+  /* 优先使用显式 act 字段 */
+  var explicit = oc.some(function(c){ return has(c.act) || has(c.actName); });
+  var groups = [], j, k;
+  if(explicit){
+    var order = [], map = {};
+    for(j = 0; j < oc.length; j++){
+      var key = String(oc[j].actName || oc[j].act || '未分幕');
+      if(!map[key]){ map[key] = []; order.push(key); }
+      map[key].push(oc[j]);
+    }
+    for(j = 0; j < order.length; j++) groups.push({name:order[j], range:'', items:map[order[j]]});
+  } else {
+    var acts = deriveActs();
+    if(acts){
+      var assigned = {};
+      for(j = 0; j < acts.length; j++){
+        var items = [];
+        for(k = 0; k < oc.length; k++){
+          if(oc[k].sequence >= acts[j].from && oc[k].sequence <= acts[j].to){ items.push(oc[k]); assigned[oc[k].sequence] = true; }
+        }
+        if(items.length) groups.push({name:acts[j].name, range:'第 ' + acts[j].from + '–' + acts[j].to + ' 章', items:items});
+      }
+      var rest = [];
+      for(k = 0; k < oc.length; k++) if(!assigned[oc[k].sequence]) rest.push(oc[k]);
+      if(rest.length) groups.push({name:'未归入分幕', range:'未从节拍中识别到区间', items:rest});
+    } else {
+      groups.push({name:'全篇', range:'未从节拍中识别出分幕', items:oc});
+    }
+  }
+  for(j = 0; j < groups.length; j++){
+    var sec = h('div', 'section');
+    sec.appendChild(h('div', 'act-head',
+      h('span', {class:'an', text:groups[j].name}),
+      groups[j].range ? h('span', {class:'ar', text:groups[j].range}) : null
+    ));
+    for(k = 0; k < groups[j].items.length; k++) sec.appendChild(cardOf(groups[j].items[k]));
+    w.appendChild(sec);
+  }
+  root.appendChild(w);
+}
+
+/* ============ 视图：状态 ============ */
+function viewState(root){
+  var w = h('div', 'wrap'), st = DATA.state;
+  if(!st){
+    root.appendChild(h('div', 'wrap', h('div', 'empty',
+      h('b', {text:'这个工作区没有 state.json。'}),
+      h('div', {style:'margin-top:8px'}, '它是写作时的一致性备忘，不是契约文件——没有它照样可以创作。')
+    )));
+    return;
+  }
+  w.appendChild(h('div', {class:'page-title', text:'状态备忘'}));
+  w.appendChild(h('div', {class:'page-sub', text:'人物现状、伏笔进展、既定事实与章节摘要'}));
+
+  var KNOWN = {updatedAfterChapter:1, characters:1, plotThreads:1, timeline:1, establishedFacts:1, summaries:1};
+
+  if(st.updatedAfterChapter) w.appendChild(h('div', {class:'page-sub', text:'更新于第 ' + st.updatedAfterChapter + ' 章之后'}));
+
+  var stc = st.characters || [];
+  if(stc.length){
+    var box = h('div');
+    stc.forEach(function(c){
+      var body = h('div', 'char-card');
+      body.appendChild(h('div', {class:'cn', text:c.name || c.id}));
+      body.appendChild(h('div', {class:'cr', text:c.role || ''}));
+      if(has(c.currentState)) body.appendChild(h('div', 'cf', h('span', {class:'fk', text:'现状'}), txt(c.currentState)));
+      if(has(c.goal)) body.appendChild(h('div', 'cf', h('span', {class:'fk', text:'目标'}), txt(c.goal)));
+      if(has(c.fear)) body.appendChild(h('div', 'cf', h('span', {class:'fk', text:'恐惧'}), txt(c.fear)));
+      if(has(c.secret)) body.appendChild(h('div', 'cf', h('span', {class:'fk', text:'秘密'}), txt(c.secret)));
+      box.appendChild(body);
+    });
+    w.appendChild(h('div', 'section', h('div', 'section-title', '人物现状 · ' + stc.length), h('div', 'cards', box)));
+  }
+
+  var stt = st.plotThreads || [];
+  if(stt.length){
+    var tbox = h('div'), resolved = 0;
+    stt.forEach(function(t){
+      if(t.resolved === true) resolved++;
+      tbox.appendChild(h('div', 'thread',
+        h('div', 'o-head',
+          h('span', {class:'o-title', text:t.name || t.id}),
+          h('span', {class:'resolved ' + (t.resolved === true ? 'y' : 'n'), text:(t.resolved === true ? '已回收' : '未回收')})
+        ),
+        h('div', {class:'tid', text:t.id}),
+        has(t.progress) ? h('div', 'cf', h('span', {class:'fk', text:'进展'}), txt(t.progress)) : null,
+        has(t.plannedPayoff) ? h('div', 'cf', h('span', {class:'fk', text:'计划回收'}), txt(t.plannedPayoff)) : null
+      ));
+    });
+    w.appendChild(h('div', 'section', h('div', 'section-title', '伏笔进展 · 已回收 ' + resolved + ' / ' + stt.length), tbox));
+  }
+
+  var stl = st.timeline || [];
+  if(stl.length){
+    var lbox = h('div', 'tl');
+    stl.forEach(function(e){
+      lbox.appendChild(h('div', 'tl-item',
+        h('div', {class:'tl-when', text:(e.when || '') + (e.id ? '   ·   ' + e.id : '')}),
+        h('div', 'tl-ev', renderMd(e.event || '', {small:true})),
+        has(e.consequence) ? h('div', 'tl-co', renderMd(e.consequence, {small:true})) : null
+      ));
+    });
+    w.appendChild(h('div', 'section', h('div', 'section-title', '时间线 · ' + stl.length), lbox));
+  }
+
+  if(st.establishedFacts && typeof st.establishedFacts === 'object'){
+    var keys = Object.keys(st.establishedFacts);
+    if(keys.length){
+      var tbl = h('table', 'kv');
+      keys.forEach(function(k){
+        var v = st.establishedFacts[k];
+        var td = h('td');
+        if(typeof v === 'string') td.appendChild(renderMd(v, {small:true}));
+        else td.appendChild(h('span', {style:'font-family:var(--mono);font-size:12px', text:JSON.stringify(v)}));
+        tbl.appendChild(h('tr', null, h('th', {text:k}), td));
+      });
+      w.appendChild(h('div', 'section', h('div', 'section-title', '既定事实 · ' + keys.length), h('div', 'card', tbl)));
+    }
+  }
+
+  var sums = st.summaries || [];
+  if(sums.length){
+    var sbox = h('div', 'card');
+    for(var i = 0; i < sums.length; i++){
+      var item = h('div', 'summary-item');
+      item.appendChild(renderMd(String(sums[i]), {small:true}));
+      sbox.appendChild(item);
+    }
+    w.appendChild(h('div', 'section', h('div', 'section-title', '章节摘要 · ' + sums.length), sbox));
+  }
+
+  /* 未知顶层键：通用渲染 */
+  var unknown = Object.keys(st).filter(function(k){ return !KNOWN[k]; });
+  if(unknown.length){
+    var ubox = h('div', 'card');
+    unknown.forEach(function(k){
+      var v = st[k], holder = h('div', {style:'margin-bottom:14px'});
+      holder.appendChild(h('div', {class:'side-k', text:k}));
+      if(typeof v === 'string') holder.appendChild(renderMd(v, {small:true}));
+      else if(Array.isArray(v)){
+        var ul2 = h('ul', {style:'margin:0;padding-left:1.2em;font-size:13px;line-height:1.75'});
+        v.forEach(function(x){
+          var li = h('li');
+          if(typeof x === 'string') li.appendChild(txt(x));
+          else li.appendChild(h('span', {style:'font-family:var(--mono);font-size:12px', text:JSON.stringify(x)}));
+          ul2.appendChild(li);
+        });
+        holder.appendChild(ul2);
+      } else if(v && typeof v === 'object'){
+        var t2 = h('table', 'kv');
+        Object.keys(v).forEach(function(k2){
+          var v2 = v[k2], td2 = h('td');
+          if(typeof v2 === 'string') td2.appendChild(renderMd(v2, {small:true}));
+          else td2.appendChild(h('span', {style:'font-family:var(--mono);font-size:12px', text:JSON.stringify(v2)}));
+          t2.appendChild(h('tr', null, h('th', {text:k2}), td2));
+        });
+        holder.appendChild(t2);
+      } else holder.appendChild(h('div', {class:'muted', text:String(v)}));
+      ubox.appendChild(holder);
+    });
+    w.appendChild(h('div', 'section', h('div', 'section-title', '其他字段'), ubox));
+  }
+  root.appendChild(w);
+}
+
+/* ============ 主题与排版 ============ */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  store.set('nw.theme', t);
+}
+function applyType(fs, lh){
+  document.documentElement.style.setProperty('--fs', fs + 'px');
+  document.documentElement.style.setProperty('--lh', lh);
+  store.set('nw.fs', String(fs));
+  store.set('nw.lh', String(lh));
+}
+function initTheme(){
+  var t = store.get('nw.theme');
+  if(t !== 'light' && t !== 'dark'){
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+}
+function initType(){
+  applyType(store.get('nw.fs') || '17', store.get('nw.lh') || '1.9');
+}
+
+/* ============ 路由 ============ */
+function parseHash(){
+  var raw = location.hash.replace(/^#\/?/, '');
+  var qs = '', qi = raw.indexOf('?');
+  if(qi !== -1){ qs = raw.slice(qi + 1); raw = raw.slice(0, qi); }
+  var parts = raw.split('/').filter(Boolean);
+  var q = {};
+  qs.split('&').forEach(function(pair){
+    if(!pair) return;
+    var kv = pair.split('=');
+    q[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+  });
+  var seq = parts[1] !== undefined ? parseInt(parts[1], 10) : NaN;
+  return {view:parts[0] || 'dashboard', seq:(isNaN(seq) ? null : seq), q:q};
+}
+var CURRENT = {view:'dashboard'};
+function route(){
+  var r = parseHash();
+  CURRENT = r;
+  var root = document.getElementById('view');
+  clear(root);
+  var tabs = document.querySelectorAll('.tab');
+  for(var i = 0; i < tabs.length; i++){
+    var isOn = tabs[i].getAttribute('data-view') === r.view;
+    tabs[i].className = 'tab' + (isOn ? ' is-active' : '');
+  }
+  if(r.view === 'chapters'){
+    SEARCH.q = r.q.q || '';
+    SEARCH.results = null;
+    viewChapters(root, r.seq, SEARCH.q);
+  }
+  else if(r.view === 'blueprint') viewBlueprint(root);
+  else if(r.view === 'outline') viewOutline(root);
+  else if(r.view === 'state') viewState(root);
+  else viewDashboard(root);
+  /* 直接写滚动位置，不用 window.scrollTo —— 行为等价且无副作用 */
+  document.documentElement.scrollTop = 0;
+  if(document.body) document.body.scrollTop = 0;
+}
+
+/* ============ 启动 ============ */
+function setBadge(){
+  var b = document.getElementById('modeBadge');
+  var map = {'snapshot':'快照', 'datafile':'数据文件', 'empty':'无数据'};
+  b.textContent = map[MODE] || MODE;
+  if(MODE === 'datafile') b.className = 'badge is-alt';
+  b.title = '当前数据来源：' + b.textContent;
+}
+function renderNotices(){
+  var list = DATA && DATA.notices ? DATA.notices : [];
+  var wrapEl = document.getElementById('noticeWrap'), box = document.getElementById('notice');
+  if(!list.length){ wrapEl.hidden = true; return; }
+  clear(box);
+  list.forEach(function(n){
+    box.appendChild(h('div', 'notice-item', h('span', {class:'lv', text:(n.level || 'info').toUpperCase()}), txt(n.message || '')));
+  });
+  wrapEl.hidden = false;
+}
+function emptyState(root){
+  clear(root);
+  root.appendChild(h('div', 'wrap-narrow',
+    h('div', 'empty',
+      h('b', {text:'没有读到任何数据。'}),
+      h('div', {style:'margin-top:10px;line-height:1.9;text-align:left'},
+        h('div', {text:'这个页面按以下顺序自动寻找数据，两种都不需要联网：'}),
+        h('div', {text:'1. HTML 内嵌的数据快照（由生成器写入，正常情况走这条）'}),
+        h('div', {text:'2. 同目录的 viewer-data.js（把模板直接复制成 viewer.html 时使用）'}),
+        h('div', {style:'margin-top:10px'},
+          h('b', {text:'生成方式：'}), ' ',
+          h('code', {style:'font-family:var(--mono);font-size:12px', text:'python build_viewer.py <工作区>'})
+        ),
+        h('div', {style:'margin-top:6px;color:var(--text-muted)', text:'生成后双击打开；写了新章节就重新生成一次，再刷新页面。'})
+      )
+    )
+  ));
+}
+function boot(){
+  initTheme();
+  initType();
+  document.getElementById('themeBtn').addEventListener('click', function(){
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+  window.addEventListener('hashchange', route);
+  document.addEventListener('keydown', function(e){
+    if(CURRENT.view !== 'chapters') return;
+    var t = e.target;
+    if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if(e.altKey || e.ctrlKey || e.metaKey) return;
+    if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    var seqs = DATA.chapters.map(function(c){ return c.seq; }).filter(function(s){ return s; });
+    var at = seqs.indexOf(CURRENT.seq);
+    if(at === -1) at = 0;
+    var next = seqs[at + (e.key === 'ArrowRight' ? 1 : -1)];
+    if(next){ location.hash = '#/chapters/' + next; e.preventDefault(); }
+  });
+
+  var inline = fromInline();
+  var chain;
+  if(inline){
+    chain = Promise.resolve({data:inline, mode:'snapshot'});
+  } else {
+    // 无内嵌数据时退到同目录的 viewer-data.js（把模板直接复制成 viewer.html 的场景）
+    chain = fromDataFile().then(function(d){
+      return d ? {data:d, mode:'datafile'} : {data:null, mode:'empty'};
+    });
+  }
+
+  chain.then(function(r){
+    DATA = r.data; MODE = r.mode;
+    if(!DATA){ setBadge(); emptyState(document.getElementById('view')); return; }
+
+    var finish = function(){
+      buildIndex(DATA);
+      if(DATA.project && DATA.project.title) document.title = DATA.project.title + ' · 阅读器';
+      var bt = document.getElementById('brandTitle'), bs = document.getElementById('brandSub');
+      bt.textContent = (DATA.project && DATA.project.title) || '未命名作品';
+      bs.textContent = [DATA.project && DATA.project.genre, DATA.workspaceName].filter(Boolean).join(' · ');
+      setBadge();
+      renderNotices();
+      route();
+    };
+    finish();
+  }).catch(function(){
+    setBadge();
+    emptyState(document.getElementById('view'));
+  });
+}
+
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+})();
+</script>
+</body>
+</html>
